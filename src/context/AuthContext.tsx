@@ -1,4 +1,5 @@
-import { createContext, useEffect, useState } from 'react';
+import { createContext, useEffect, useRef, useState } from 'react';
+import { AppState, type AppStateStatus } from 'react-native';
 import type {
   AuthContextValue,
   AuthProviderProps,
@@ -27,12 +28,13 @@ export const AuthContext = createContext<AuthContextValue>(
   defaultAuthContextValue,
 );
 
-const SESSION_TTL_MS = 6 * 60 * 1000; // --> 6 minutes
+const SESSION_TTL_MS = 2 * 60 * 1000; // --> 2 minutes
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [email, setEmail] = useState<string | null>(null);
-  const [loading, setIsLoading] = useState<boolean>(false);
+  const [loading, setIsLoading] = useState<boolean>(true);
   const [userToken, setUserToken] = useState<string | null>(null);
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 
   const signIn: AuthContextValue['signIn'] = async (data: DataLoginType) => {
     try {
@@ -97,19 +99,45 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   useEffect(() => {
-    const loadStorageData = async () => {
-      const session: UserDataType | null = await retrieveUserSession();
-      if (session) {
-        const isExpired = Date.now() - session.loginAt > SESSION_TTL_MS;
-        if (!isExpired) {
-          setEmail(session.email);
-          setUserToken(session.token);
-        } else {
-          await clearUserSession();
+    const syncSessionFromStorage = async () => {
+      try {
+        setIsLoading(true);
+        const session: UserDataType | null = await retrieveUserSession();
+        if (!session) {
+          setEmail(null);
+          setUserToken(null);
+          return;
         }
+
+        const isExpired = Date.now() - session.loginAt > SESSION_TTL_MS;
+        if (isExpired) {
+          await clearUserSession();
+          setEmail(null);
+          setUserToken(null);
+          return;
+        }
+
+        setEmail(session.email);
+        setUserToken(session.token);
+      } finally {
+        setIsLoading(false);
       }
     };
-    loadStorageData();
+
+    syncSessionFromStorage();
+
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      const prev = appStateRef.current;
+      appStateRef.current = nextAppState;
+      if (
+        (prev === 'inactive' || prev === 'background') &&
+        nextAppState === 'active'
+      ) {
+        syncSessionFromStorage();
+      }
+    });
+
+    return () => subscription.remove();
   }, []);
 
   return (

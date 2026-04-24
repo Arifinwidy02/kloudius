@@ -35,7 +35,6 @@ const LoginScreen = () => {
 
     if (res?.success) {
       showSuccess('Login success');
-      navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
       return;
     }
 

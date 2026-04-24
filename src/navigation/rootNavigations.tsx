@@ -6,33 +6,45 @@ import { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { AuthContextValue } from '../types/auth';
 import { IconButton } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import { ActivityIndicator, View } from 'react-native';
 const Stack = createStackNavigator();
 export const RootNavigations = () => {
-  const navigation = useNavigation<any>();
-  const { logout } = useContext<AuthContextValue>(AuthContext);
+  const { logout, userToken, loading } =
+    useContext<AuthContextValue>(AuthContext);
+  const isLoggedIn = !!userToken;
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
   return (
     <Stack.Navigator>
-      <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Register" component={RegisterScreen} />
-      <Stack.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{
-          headerRight: () => {
-            return (
-              <IconButton
-                icon="logout"
-                onPress={async () => {
-                  await logout?.();
-                  navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-                }}
-                accessibilityLabel="Logout"
-              />
-            );
-          },
-        }}
-      />
+      {isLoggedIn ? (
+        <Stack.Screen
+          name="Home"
+          component={HomeScreen}
+          options={{
+            headerRight: () => {
+              return (
+                <IconButton
+                  icon="logout"
+                  onPress={async () => {
+                    await logout?.();
+                  }}
+                  accessibilityLabel="Logout"
+                />
+              );
+            },
+          }}
+        />
+      ) : (
+        <>
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Register" component={RegisterScreen} />
+        </>
+      )}
     </Stack.Navigator>
   );
 };
