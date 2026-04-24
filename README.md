@@ -1,97 +1,106 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# Kloudius Assessment (React Native)
 
-# Getting Started
+Small auth flow app built with React Native + React Navigation + React Native Paper.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## Tech stack
 
-## Step 1: Start Metro
+- **Runtime**: React Native `0.85.x`
+- **UI**: `react-native-paper`
+- **Forms**: `react-hook-form` + `yup`
+- **Storage**: `react-native-encrypted-storage`
+- **Toaster**: `react-native-easy-toast` (wrapped in app-level context)
+- **Tests**: Jest + `@testing-library/react-native`
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## Prerequisites
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+- Node.js **>= 22.11.0**
+- Bun installed (`bun --version`)
+- React Native environment setup (Android Studio / Xcode)
 
-```sh
-# Using npm
-npm start
+## Install dependencies
 
-# OR using Yarn
-yarn start
+This repo uses **Bun** as the package manager.
+
+```bash
+bun install
 ```
 
-## Step 2: Build and run your app
+## Run the app
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+Start Metro:
 
-### Android
-
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
+```bash
+bun start
 ```
 
-### iOS
+Run Android:
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
+```bash
+bun run android
 ```
 
-Then, and every time you update your native dependencies, run:
+Run iOS:
 
-```sh
-bundle exec pod install
+```bash
+cd ios && pod install && cd ..
+bun run ios
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+## Running tests
 
-```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
+```bash
+bun run test
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+## Demo credentials
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+There is a seeded user for quick login:
 
-## Step 3: Modify your app
+- **email**: `johnD@mail.com`
+- **password**: `password`
 
-Now that you have successfully run the app, let's make changes!
+You can also create a new account via **Sign up**, then login using that newly created email/password.
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+## Why Bun (instead of Yarn / npm)
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+- **Fast installs**: Bun is typically faster at dependency resolution + installation, which helps reviewers bootstrap quickly.
+- **Single tool**: Bun provides package manager + script runner in one (`bun install`, `bun run ...`).
+- **Lockfile consistency**: This repo includes `bun.lock` to keep installs reproducible.
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+If you prefer Yarn/npm, the project will still work, but the documented commands assume Bun.
 
-## Congratulations! :tada:
+## Auth persistence (6 minutes) — please change on that variabel to change the persistance auth
 
-You've successfully run and modified your React Native App. :partying_face:
+Login session is persisted using `react-native-encrypted-storage` under the key `user_session`.
 
-### Now what?
+- **Store**: `src/services/storage.ts` (`storeUserSession`)
+- **Load/validate TTL**: `src/context/AuthContext.tsx`
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+The expiration is controlled by this constant:
 
-# Troubleshooting
+- `SESSION_TTL_MS` in `src/context/AuthContext.tsx` (default **6 minutes**)
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+To change it, update:
 
-# Learn More
+```ts
+const SESSION_TTL_MS = 6 * 60 * 1000;
+```
 
-To learn more about React Native, take a look at the following resources:
+Example: make it 30 seconds:
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+```ts
+const SESSION_TTL_MS = 30 * 1000;
+```
+
+## Toaster behavior
+
+Toasts are provided via `ToastProvider`:
+
+- `src/context/ToastContext.tsx`
+- Error toast: **red background + white text** (shown from top)
+- Success toast: **green background + white text** (shown from top)
+
+Used in:
+
+- `LoginScreen`: success toast when login succeeds → navigates to Home; error toast for invalid credentials
+- `RegisterScreen`: success toast when sign up succeeds → navigates back to Login
